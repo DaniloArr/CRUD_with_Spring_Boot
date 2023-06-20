@@ -5,7 +5,9 @@ import com.danilo.people.dto.response.PersonResponseDTO;
 import com.danilo.people.entity.Person;
 import com.danilo.people.repository.PersonRepository;
 import com.danilo.people.util.PersonMapper;
+import com.danilo.people.util.Regex;
 import lombok.RequiredArgsConstructor;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,7 @@ public class PersonServiceImplements implements PersonService {
 
     private final PersonRepository personRepository;
     private final PersonMapper personMapper;
+    private final Regex regexCpf;
 
     @Override
     public PersonResponseDTO findById(Long id) {
@@ -31,12 +34,18 @@ public class PersonServiceImplements implements PersonService {
 
     @Override
     public PersonResponseDTO register(PersonRequestDTO personDTO) {
+        if (!regexCpf.isValidCPF(personDTO.getCpf())) {
+            throw new IllegalArgumentException("Invalid CPF");
+        }
         Person person = personMapper.toPerson(personDTO);
         return personMapper.toPersonDTO(personRepository.save(person));
     }
 
     @Override
     public PersonResponseDTO update(PersonRequestDTO personDTO, Long id) {
+        if (!regexCpf.isValidCPF(personDTO.getCpf())) {
+            throw new IllegalArgumentException("Invalid CPF");
+        }
         Person person = loadPerson(id);
         personMapper.updatePersonData(person, personDTO);
         return personMapper.toPersonDTO(personRepository.save(person));
@@ -50,6 +59,6 @@ public class PersonServiceImplements implements PersonService {
 
     private Person loadPerson(Long id){
         return  personRepository.findById(id)
-                    .orElseThrow(()-> new RuntimeException("Person wasn't found on database"));
+                    .orElseThrow(()-> new ResourceNotFoundException("Person not found"));
     }
 }
